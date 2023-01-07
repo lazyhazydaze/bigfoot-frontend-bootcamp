@@ -1,20 +1,54 @@
 import React from "react";
-import logo from "./logo.png";
-import "./App.css";
+import { useState, useEffect } from "react";
+import { useNavigate, Route, Routes } from "react-router-dom";
+import axios from "axios";
 
-class App extends React.Component {
-  render() {
-    return (
-      <div className="App">
-        <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <p>
-            Edit <code>src/App.js</code> and save to reload.
-          </p>
-        </header>
-      </div>
+import AllSightings from "./Components/AllSightings";
+import SingleSighting from "./Components/SingleSighting";
+import AddSighting from "./Components/AddSighting";
+
+export default function App() {
+  const [sightings, setSightings] = useState([]);
+
+  const navigate = useNavigate();
+
+  const getInitialData = async () => {
+    let initialAPICall = await axios.get(
+      `${process.env.REACT_APP_API_SERVER}/sightings`
     );
-  }
-}
+    console.log(initialAPICall.data);
+    setSightings(initialAPICall.data);
+  };
 
-export default App;
+  useEffect(() => {
+    getInitialData();
+  }, []);
+
+  const createNewSighting = async (date, location, notes) => {
+    let sighting = {
+      date,
+      location,
+      notes,
+    };
+    let response = await axios.post(
+      `${process.env.REACT_APP_API_SERVER}/sightings`,
+      sighting
+    );
+    let newArray = [...sightings];
+    newArray.push(response.data);
+    setSightings(newArray);
+    navigate(`/sightings/${response.data.id}`);
+  };
+
+  return (
+    <Routes>
+      <Route path="/" element={<AllSightings sightings={sightings} />} />
+      <Route path="sightings/:id" element={<SingleSighting />} />
+      <Route
+        path="/new"
+        element={<AddSighting addSighting={createNewSighting} />}
+      />
+      <Route path="*" element={<p>There's nothing here!</p>} />
+    </Routes>
+  );
+}
